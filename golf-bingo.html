@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bingo Game</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="back-arrow">
+        <a href="index.html">&#8592; Back</a>
+    </div>
+    
+    <h1>Golf W/ Your Friends BINGO</h1>
+    
+    <!-- Header row for BINGO letters -->
+    <div id="bingo-header">
+        <div class="bingo-header-cell">B</div>
+        <div class="bingo-header-cell">I</div>
+        <div class="bingo-header-cell">N</div>
+        <div class="bingo-header-cell">G</div>
+        <div class="bingo-header-cell">O</div>
+    </div>
+    
+    <div id="bingo-board">
+        <!-- Bingo cells will be dynamically inserted here -->
+    </div>
+    <button id="shuffle-btn">Restart & Shuffle</button>
+
+    <!-- Modal for bingo win -->
+    <div id="bingo-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="bingo-message"></h2>
+            <button id="continue-btn">Continue</button>
+            <button id="restart-btn">Restart & Shuffle</button>
+        </div>
+    </div>
+
+    <script>
+        const phrases = [
+    "Hole in one!", 
+    "I overshot it!", 
+    "Is collision on?", 
+    "What’s the par for this hole?", 
+    "Why is my ball bouncing?", 
+    "How did I miss that shot?", 
+    "I need more power.", 
+    "What’s the wind speed?", 
+    "I’m stuck in the rough.", 
+    "What’s the best angle here?", 
+    "I hit the water hazard.", 
+    "I’m taking the long way.", 
+    "How is this possible?", 
+    "I’m going for the bank shot.", 
+    "I hate this map!", 
+    "Did I just get reset?", 
+    "I’m stuck in a loop!", 
+    "Is it my turn yet?", 
+    "I hit the wrong power!", 
+    "Did you see that bounce?", 
+    "How did you do that?", 
+    "I’m going for trick shots.", 
+    "I missed the hole by inches!", 
+    "This is impossible.", 
+    "Full power for this shot.", 
+    "I need more precision.", 
+    "What was that jump?", 
+    "I’m under par!", 
+    "I hit the obstacle again!", 
+    "Is there a shortcut here?", 
+    "I got stuck behind the wall.", 
+    "What’s with this gravity?", 
+    "Can I reset my shot?", 
+    "I’m taking the shortcut.", 
+    "This course is unfair!", 
+    "I hit the ramp wrong.", 
+    "The timing is impossible.", 
+    "Can we turn collision off?", 
+    "I’m going out of bounds.", 
+    "Where’s the next hole?", 
+    "How did you make that shot?", 
+    "What’s with the moving platforms?", 
+    "I need to aim better.", 
+    "I’m on stroke 10 already.", 
+    "This is harder than it looks.", 
+    "I need to bank it off the wall.", 
+    "There’s no way that’s possible.", 
+    "That’s my personal best!", 
+    "Who’s in the lead?", 
+    "Let’s do a practice round!"
+];
+
+    
+
+
+        const boardSize = 5;
+        let board = [];
+        let bingoCount = 0;  // Track the number of Bingos achieved
+        const bingoBoard = document.getElementById('bingo-board');
+        const shuffleBtn = document.getElementById('shuffle-btn');
+        const bingoModal = document.getElementById('bingo-modal');
+        const continueBtn = document.getElementById('continue-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const bingoMessage = document.getElementById('bingo-message');
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function createBoard() {
+            bingoBoard.innerHTML = '';  // Clear previous board
+            shuffle(phrases);  // Shuffle phrases
+            let phraseIndex = 0;
+            bingoCount = 0;  // Reset the Bingo count when creating a new board
+
+            // Create bingo board cells
+            for (let row = 0; row < boardSize; row++) {
+                for (let col = 0; col < boardSize; col++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('bingo-cell');
+
+                    if (row === 2 && col === 2) {
+                        cell.textContent = 'Free Space';
+                        cell.classList.add('free-space', 'marked');  // Pre-mark the free space
+                    } else {
+                        cell.textContent = phrases[phraseIndex];
+                        cell.addEventListener('click', () => {
+                            cell.classList.toggle('marked');
+                            checkBingo();  // Check for bingo after marking
+                        });
+                        phraseIndex++;
+                    }
+                    bingoBoard.appendChild(cell);
+                }
+            }
+        }
+
+        // Function to check if the player has 5 in a row
+        function checkBingo() {
+            const cells = document.querySelectorAll('.bingo-cell');
+            const grid = Array.from(cells).map(cell => cell.classList.contains('marked'));
+
+            // Check rows, columns, and diagonals
+            const checkLines = () => {
+                let newBingos = 0;  // To count the number of new Bingos found
+                // Rows and columns
+                for (let i = 0; i < boardSize; i++) {
+                    if (grid.slice(i * boardSize, (i + 1) * boardSize).every(val => val)) newBingos++;  // Row check
+                    if ([0, 1, 2, 3, 4].map(j => grid[i + j * boardSize]).every(val => val)) newBingos++;  // Column check
+                }
+                // Diagonals
+                if ([0, 6, 12, 18, 24].every(i => grid[i])) newBingos++;  // Left diagonal
+                if ([4, 8, 12, 16, 20].every(i => grid[i])) newBingos++;  // Right diagonal
+                return newBingos;
+            };
+
+            const newBingos = checkLines();
+            if (newBingos > bingoCount) {  // Only show popup if new Bingos are found
+                bingoCount = newBingos;  // Update bingo count to reflect new Bingos
+                showBingoPopup(bingoCount);
+            }
+        }
+
+        // Show the appropriate Bingo message based on the number of Bingos
+        function showBingoPopup(count) {
+            if (count === 1) {
+                bingoMessage.textContent = "Bingo! You got 5 in a row!";
+            } else if (count === 2) {
+                bingoMessage.textContent = "Double Bingo! You got 10 in a row!";
+            } else if (count === 3) {
+                bingoMessage.textContent = "Triple Bingo! You got 15 in a row!";
+            } else if (count === 4) {
+                bingoMessage.textContent = "Quadruple Bingo! You got 20 in a row!";
+            } else if (count === 5) {
+                bingoMessage.textContent = "Quintuple Bingo! You got 25 in a row!";
+            } else if (count === 6) {
+                bingoMessage.textContent = "IDK man You got 30in a row!";
+            }
+            bingoModal.style.display = 'flex';  // Show the modal
+        }
+
+        // Restart and shuffle the board
+        function restartBoard() {
+            createBoard();
+            bingoModal.style.display = 'none';  // Hide the modal
+        }
+
+        shuffleBtn.addEventListener('click', createBoard);
+        restartBtn.addEventListener('click', restartBoard);
+        continueBtn.addEventListener('click', () => {
+            bingoModal.style.display = 'none';  // Hide the modal and continue the game
+        });
+
+        // Initialize the board on load
+        createBoard();
+    </script>
+</body>
+</html>
